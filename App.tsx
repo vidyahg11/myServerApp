@@ -5,6 +5,7 @@ import { BridgeServer } from 'react-native-http-bridge-refurbished';
 const App = () => {
   const [lastCalled, setLastCalled] = useState<number | undefined>();
   const [serverStatus, setServerStatus] = useState<string>('Starting server...');
+  const [uploadedData, setUploadedData] = useState<any | null>(null);
 
   useEffect(() => {
     const server = new BridgeServer('http_service', true);
@@ -37,6 +38,20 @@ const App = () => {
       return { message: 'DELETE request received' };
     });
 
+    server.post('/comm_check', async (req, res) => {
+      console.log("Received POST request to /com_check");
+      setLastCalled(Date.now());
+      return { message : 'OptiFit'};
+    });
+
+    server.post('/upload', async (req, res) => {
+      console.log('Received POST request to /upload');
+      setLastCalled(Date.now());
+      const jsonData = req.data;
+      setUploadedData(jsonData);
+      return { message: 'File received', data: jsonData };
+    });
+
     server.listen(3000);
     console.log('Server started on port 3000');
     setServerStatus('Server started on port 3000');
@@ -55,6 +70,11 @@ const App = () => {
         {lastCalled === undefined
           ? 'Request webserver to change text'
           : 'Called at ' + new Date(lastCalled).toLocaleString()}
+      </Text>
+      <Text style={styles.text}>
+        {uploadedData === null
+          ? 'No file uploaded'
+          : 'Uploaded Data: ' + JSON.stringify(uploadedData)}
       </Text>
     </View>
   );
