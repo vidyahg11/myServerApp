@@ -52,6 +52,7 @@ const App = () => {
       return { message : 'OptiFit'};
     });
 
+    
     server.post('/upload', async (req, res) => {
       console.log('Received POST request to /upload');
       setLastCalled(Date.now());
