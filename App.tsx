@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BridgeServer } from 'react-native-http-bridge-refurbished';
+import { openDatabase, createTable, insertPipeData } from './db-service';
+
 
 const App = () => {
   const [lastCalled, setLastCalled] = useState<number | undefined>();
   const [serverStatus, setServerStatus] = useState<string>('Starting server...');
-  const [uploadedData, setUploadedData] = useState<any | null>(null);
 
   useEffect(() => {
+    const initializeDatabase = async () => {
+      await openDatabase();
+      await createTable();
+    };
+
+    initializeDatabase();
+    
     const server = new BridgeServer('http_service', true);
 
     server.get('/', async (req, res) => {
@@ -48,7 +56,10 @@ const App = () => {
       console.log('Received POST request to /upload');
       setLastCalled(Date.now());
       const jsonData = req.data;
-      setUploadedData(jsonData);
+      if (jsonData && jsonData.Data && Array.isArray(jsonData.Data.radius) && Array.isArray(jsonData.Data.phi)) {
+        insertPipeData(jsonData.Data.radius, jsonData.Data.phi);
+      }
+
       return { message: 'File received', data: jsonData };
     });
 
@@ -70,11 +81,6 @@ const App = () => {
         {lastCalled === undefined
           ? 'Request webserver to change text'
           : 'Called at ' + new Date(lastCalled).toLocaleString()}
-      </Text>
-      <Text style={styles.text}>
-        {uploadedData === null
-          ? 'No file uploaded'
-          : 'Uploaded Data: ' + JSON.stringify(uploadedData)}
       </Text>
     </View>
   );
