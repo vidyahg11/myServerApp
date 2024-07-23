@@ -1,11 +1,11 @@
 // db-service.js
 import SQLite from 'react-native-sqlite-storage';
-
+ 
 //SQLite.DEBUG(true);
 SQLite.enablePromise(true);
-
+ 
 let db = null;
-
+ 
 const openDatabase = async () => {
   try {
     db = await SQLite.openDatabase({name: 'OptiFit.db'});
@@ -14,7 +14,7 @@ const openDatabase = async () => {
     console.error('Error opening database: ', error);
   }
 };
-
+ 
 const createTable = async () => {
   try {
     await db.transaction(tx => {
@@ -37,18 +37,15 @@ const createTable = async () => {
     console.error('Transaction error: ', error);
   }
 };
-
-const insertPipeData = async (radiusArray, phiArray) => {
-  if (radiusArray.length !== phiArray.length) {
-    console.error('The length of radius and phi arrays must be the same.');
-    return;
-  }
-
+ 
+const insertPipeData = async (jsonData) => {
+  const { radius: radiusArray, phi: phiArray } = jsonData.Data;
+  
   const radiusString = JSON.stringify(radiusArray);
   const phiString = JSON.stringify(phiArray);
-
+ 
   const query = `INSERT INTO pipeData (radius, phi) VALUES (?, ?)`;
-
+ 
   try {
     await db.transaction(tx => {
       tx.executeSql(
@@ -70,5 +67,5 @@ const insertPipeData = async (radiusArray, phiArray) => {
     console.error('Transaction error: ', error);
   }
 };
-
+ 
 export { openDatabase, createTable, insertPipeData };

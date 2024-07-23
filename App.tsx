@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BridgeServer } from 'react-native-http-bridge-refurbished';
-import { openDatabase, createTable, insertPipeData } from './db-service';
+import { openDatabase, createTable, insertPipeData } from './src/db/db-service';
+import { Platform } from 'react-native';
 
 
 const App = () => {
@@ -25,13 +26,6 @@ const App = () => {
       return { message: 'GET request received' };
     });
 
-    server.post('/', async (req, res) => {
-      console.log('Received POST request');
-      // Handle POST request
-      setLastCalled(Date.now());
-      return { message: 'POST request received', data: req.data };
-    });
-
     server.put('/', async (req, res) => {
       console.log('Received PUT request');
       // Handle PUT request
@@ -52,22 +46,38 @@ const App = () => {
       return { message : 'OptiFit'};
     });
 
-    
     server.post('/upload', async (req, res) => {
-      console.log('Received POST request to /upload');
-      setLastCalled(Date.now());
-      const jsonData = req.data;
-      if (jsonData && jsonData.Data && Array.isArray(jsonData.Data.radius) && Array.isArray(jsonData.Data.phi)) {
-        insertPipeData(jsonData.Data.radius, jsonData.Data.phi);
-      }
+      try {
+        setLastCalled(Date.now());
+        console.log('Received POST request to /upload');
+        let jsonData;
+        if (Platform.OS === 'android') {
+          try {
+            jsonData = req.data;
+          } catch (parseError) {
+            console.log('Error parsing req.data:', parseError);
+            return { message: 'POST request received but data format is invalid', data: null };
+          }
+        } else if (Platform.OS === 'ios') {
+          if (!req.postData) {
+            console.log("json data of req.postData is :", req.postData);
+            return { message: 'POST request received but no data provided', data: null };
+          }
+          jsonData = JSON.parse(JSON.stringify(req.postData));
+        }
 
-      return { message: 'File received', data: jsonData };
+        await insertPipeData(jsonData);
+        return { message: 'File received and data inserted successfully', data: jsonData };
+      } catch (error) {
+        console.log('Error:', error);
+        return { message: 'Internal server error' };
+      }
     });
 
     server.listen(3000);
     console.log('Server started on port 3000');
     setServerStatus('Server started on port 3000');
-
+    
     return () => {
       server.stop();
       console.log('Server stopped');

@@ -1,6 +1,6 @@
 'use strict';
 
-import httpServer from "./httpServer";
+import httpServer from "../server/httpServer";
 
 class Request {
   constructor(rawRequest) {
@@ -10,7 +10,12 @@ class Request {
     this.url = rawRequest.url;
   }
   get data() {
-    return JSON.parse(this.postData);
+    try {
+      return JSON.parse(this.postData);
+    } catch (error) {
+      console.error('Error parsing JSON data:', error);
+      return null;
+    }
   }
 }
 class Response {
