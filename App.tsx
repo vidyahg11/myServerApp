@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BridgeServer } from 'react-native-http-bridge-refurbished';
-import { openDatabase, createTable, insertPipeData } from './src/db/db-service';
+import { openDatabase, createPipeInfoTable, fetchPipeInfo, createPipeStatusTable, fetchPipeStatus } from './src/db/db-service';
 import { Platform } from 'react-native';
-
 
 const App = () => {
   const [lastCalled, setLastCalled] = useState<number | undefined>();
@@ -12,7 +11,8 @@ const App = () => {
   useEffect(() => {
     const initializeDatabase = async () => {
       await openDatabase();
-      await createTable();
+      await createPipeInfoTable();
+      await createPipeStatusTable();
     };
 
     initializeDatabase();
@@ -66,7 +66,8 @@ const App = () => {
           jsonData = JSON.parse(JSON.stringify(req.postData));
         }
 
-        await insertPipeData(jsonData);
+        await fetchPipeInfo(jsonData);
+        await fetchPipeStatus(jsonData);
         return { message: 'File received and data inserted successfully', data: jsonData };
       } catch (error) {
         console.log('Error:', error);
