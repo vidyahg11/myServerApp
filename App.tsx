@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BridgeServer } from 'react-native-http-bridge-refurbished';
-import { openDatabase, createPipeInfoTable, fetchPipeInfo, createPipeStatusTable, fetchPipeStatus } from './src/db/db-service';
 import { Platform } from 'react-native';
+import { openDB, createPipeInfoTable, fetchPipeInfo, createPipeStatusTable, fetchPipeStatus } from './src/db/db-service';
+import { validateJsonData } from './src/validate/validation';
 
 const App = () => {
   const [lastCalled, setLastCalled] = useState<number | undefined>();
   const [serverStatus, setServerStatus] = useState<string>('Starting server...');
 
   useEffect(() => {
-    const initializeDatabase = async () => {
-      await openDatabase();
-      await createPipeInfoTable();
-      await createPipeStatusTable();
+    const initializeDB = async () => {
+      const db = await openDB();
+      if (db) {
+        await createPipeInfoTable();
+        await createPipeStatusTable();
+      }
     };
 
-    initializeDatabase();
+    initializeDB();
     
     const server = new BridgeServer('http_service', true);
 
@@ -66,9 +69,15 @@ const App = () => {
           jsonData = JSON.parse(JSON.stringify(req.postData));
         }
 
+        const validation = validateJsonData(jsonData);
+        if (!validation.isValid) {
+          console.log("Invalid JSON data");
+          return res.json({ message: 'Failure', errors: validation.errors });
+        }
+
         await fetchPipeInfo(jsonData);
         await fetchPipeStatus(jsonData);
-        return { message: 'File received and data inserted successfully', data: jsonData };
+        return { message: 'Success', data: jsonData };
       } catch (error) {
         console.log('Error:', error);
         return { message: 'Internal server error' };

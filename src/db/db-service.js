@@ -1,21 +1,54 @@
-// db-service.js
 import SQLite from 'react-native-sqlite-storage';
- 
-//SQLite.DEBUG(true);
-SQLite.enablePromise(true);
+import { PermissionsAndroid, Platform } from 'react-native';
  
 let db = null;
- 
-const openDatabase = async () => {
-  try {
-    db = await SQLite.openDatabase({name: 'OptiFit.db'});
-    console.log('Database opened successfully');
-  } catch (error) {
-    console.error('Error opening database: ', error);
+
+export const askStoragePermission = async () => {
+  if (Platform.OS === "android") {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: "This app Write logs to Storage",
+          message: "Your app needs permission to write logs to storage.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log("db-service", "askStoragePermission", "Permission granted");
+        return true;
+      } else {
+        console.log("db-service", "askStoragePermission", "Permission denied");
+        return false;
+      }
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  } else {
+    return true;
   }
 };
  
-const createPipeInfoTable = async () => {
+export const openDB = async () => {
+  if (!db) {
+    const granted = await askStoragePermission();
+    if (granted) {
+      db = await SQLite.openDatabase({ name: "OptiFit.db" }, 
+        () => console.log("db-service", "openDB", "Database opened successfully"), 
+        (error) => console.error("Failed to open database", error)
+      );
+    } else {
+      console.error("Storage permission not granted. Cannot open database.");
+    }
+  }
+
+  return db;
+};
+ 
+export const createPipeInfoTable = async () => {
   try {
     await db.transaction(tx => {
       tx.executeSql(
@@ -59,7 +92,7 @@ const createPipeInfoTable = async () => {
   }
 };
 
-const fetchPipeInfo = async (jsonData) => {
+export const fetchPipeInfo = async (jsonData) => {
   const pipeEndID = `${jsonData.pipeinfo.pipe_name}${jsonData.pipeinfo.pipe_end}`;
   try {
     await db.transaction(tx => {
@@ -180,7 +213,7 @@ const StatusEnum = {
   MISSING_ENDB: 'Missing EndB',
 };
 
-const createPipeStatusTable = async () => {
+export const createPipeStatusTable = async () => {
   try {
     await db.transaction(tx => {
       tx.executeSql(
@@ -209,7 +242,7 @@ const createPipeStatusTable = async () => {
   }
 };
 
-const fetchPipeStatus = async (jsonData) => {
+export const fetchPipeStatus = async (jsonData) => {
   const { pipeinfo } = jsonData;
   const pipeID = pipeinfo.pipe_name;
   const projectNumber = jsonData.projectInfo.project_num;
@@ -313,5 +346,3 @@ const updatePipeStatus = async (existingRecord, jsonData) => {
     console.error('Transaction error(updatePipeStatus): ', error);
   }
 };
- 
-export { openDatabase, createPipeInfoTable, createPipeStatusTable, fetchPipeInfo, fetchPipeStatus };
