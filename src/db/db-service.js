@@ -346,3 +346,55 @@ const updatePipeStatus = async (existingRecord, jsonData) => {
     console.error('Transaction error(updatePipeStatus): ', error);
   }
 };
+
+export const getPipeInfoById = async (pipeEndId) => {
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        'SELECT * FROM PipeInfo WHERE pipeEndId = ?',
+        [pipeEndId],
+        (tx, results) => {
+          const len = results.rows.length;
+          if (len > 0) {
+            const data = [];
+            for (let i = 0; i < len; i++) {
+              data.push(results.rows.item(i));
+            }
+            resolve(data);
+          } else {
+            resolve([]);
+          }
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    });
+  });
+};
+
+export const getPipeStatusById = async (pipeID) => {
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        'SELECT * FROM PipeStatus WHERE pipeID = ?',
+        [pipeID],
+        (tx, results) => {
+          const len = results.rows.length;
+          if (len > 0) {
+            const data = [];
+            for (let i = 0; i < len; i++) {
+              data.push(results.rows.item(i));
+            }
+            resolve(data);
+          } else {
+            resolve([]);
+          }
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    });
+  });
+};

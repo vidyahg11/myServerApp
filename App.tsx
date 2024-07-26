@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BridgeServer } from 'react-native-http-bridge-refurbished';
 import { Platform } from 'react-native';
-import { openDB, createPipeInfoTable, fetchPipeInfo, createPipeStatusTable, fetchPipeStatus } from './src/db/db-service';
+import { openDB, createPipeInfoTable, fetchPipeInfo, createPipeStatusTable, fetchPipeStatus, getPipeInfoById, getPipeStatusById } from './src/db/db-service';
 import { validateJsonData } from './src/validate/validation';
 
 const App = () => {
@@ -26,7 +26,22 @@ const App = () => {
       console.log('Received GET request');
       // Handle GET request
       setLastCalled(Date.now());
-      return { message: 'GET request received' };
+
+      const pipeEndId = 'F954_1-11_1_11EndB';
+      const pipeID = 'F954_1-11_1_11';
+
+      try {
+        const pipeInfo = await getPipeInfoById(pipeEndId);
+        const pipeStatus = await getPipeStatusById(pipeID);
+        res.json({
+          message: 'GET request received',
+          pipeInfo,
+          pipeStatus
+        });
+      } catch (error) {
+        console.error('Error fetching pipe info or status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
     });
 
     server.put('/', async (req, res) => {
