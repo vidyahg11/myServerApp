@@ -20,7 +20,9 @@ const App = () => {
 
     initializeDB();
     
+    console.log("bridge server   ");
     const server = new BridgeServer('http_service', true);
+    console.log("bridge server from packag read");
 
     server.get('/', async (req, res) => {
       console.log('Received GET request');
@@ -40,7 +42,7 @@ const App = () => {
         });
       } catch (error) {
         console.error('Error fetching pipe info or status:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        return { message: 'Internal server error' };
       }
     });
 
@@ -99,6 +101,7 @@ const App = () => {
       }
     });
 
+    console.log("bridge server : ", BridgeServer);
     server.listen(3000);
     console.log('Server started on port 3000');
     setServerStatus('Server started on port 3000');
